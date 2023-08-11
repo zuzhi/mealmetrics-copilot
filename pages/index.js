@@ -1,71 +1,42 @@
-import { useCallback, useEffect, useState } from 'react'
-import Button from '../components/Button'
-import ClickCount from '../components/ClickCount'
-import styles from '../styles/home.module.css'
+import { useState } from 'react';
 
-function throwError() {
-  console.log(
-    // The function body() is not defined
-    document.body()
-  )
-}
+function RecipeInfo() {
+  const [recipe, setRecipe] = useState('');
+  const [nutritionFacts, setNutritionFacts] = useState(null);
 
-function Home() {
-  const [count, setCount] = useState(0)
-  const increment = useCallback(() => {
-    setCount((v) => v + 1)
-  }, [setCount])
-
-  useEffect(() => {
-    const r = setInterval(() => {
-      increment()
-    }, 1000)
-
-    return () => {
-      clearInterval(r)
-    }
-  }, [increment])
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const response = await fetch('http://localhost:8080/openai/generateinfo', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ recipe })
+    });
+    const recipeInfo = await response.json();
+    setNutritionFacts(recipeInfo.data.split(/\n\n|\n/));
+  };
 
   return (
-    <main className={styles.main}>
-      <h1>Fast Refresh Demo</h1>
-      <p>
-        Fast Refresh is a Next.js feature that gives you instantaneous feedback
-        on edits made to your React components, without ever losing component
-        state.
-      </p>
-      <hr className={styles.hr} />
-      <div>
-        <p>
-          Auto incrementing value. The counter won't reset after edits or if
-          there are errors.
-        </p>
-        <p>Current value: {count}</p>
-      </div>
-      <hr className={styles.hr} />
-      <div>
-        <p>Component with state.</p>
-        <ClickCount />
-      </div>
-      <hr className={styles.hr} />
-      <div>
-        <p>
-          The button below will throw 2 errors. You'll see the error overlay to
-          let you know about the errors but it won't break the page or reset
-          your state.
-        </p>
-        <Button
-          onClick={(e) => {
-            setTimeout(() => document.parentNode(), 0)
-            throwError()
-          }}
-        >
-          Throw an Error
-        </Button>
-      </div>
-      <hr className={styles.hr} />
-    </main>
-  )
+    <div>
+      <h1>查找任何食谱的营养成分</h1>
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="recipe">输入食谱：</label>
+        <textarea id="recipe" value={recipe} onChange={(e) => setRecipe(e.target.value)} />
+        <button type="submit">提交</button>
+      </form>
+      {nutritionFacts && (
+        <div>
+          <h2>营养成分:</h2>
+          <ul>
+            {nutritionFacts.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
 }
 
-export default Home
+export default RecipeInfo;
